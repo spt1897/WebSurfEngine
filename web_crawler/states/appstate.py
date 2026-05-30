@@ -16,4 +16,5 @@ class AppState:
         #Global threading locks
         self.mysql_connect_lock=threading.Lock()
         self.redis_connect_lock=threading.Lock()
+        self.redis_hydrator_lock=threading.Lock()
         #=========================================================

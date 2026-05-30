@@ -19,4 +19,5 @@ def configure_crawler(config):
     config.PAGES_PER_DOMAIN=int(os.getenv("PAGES_PER_DOMAIN","100").strip())
     config.MAX_RETRY=int(os.getenv("MAX_RETRY","10").strip())
     config.DELAY_SEC=int(os.getenv("DELAY_SEC","3").strip())
+    config.BACTH_SIZE=int(os.getenv("BATCH_SIZE","10").strip())
     print("Environment variables loaded successfully✅!")

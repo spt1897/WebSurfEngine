@@ -24,9 +24,11 @@ create table if not exists keywords(
 
 );
 
-create table if not exists url_queue(
+create table if not exists crawl_queue(
+    id int AUTO_INCREMENT primary key,
     url varchar(768) not null unique,
     status enum("not_crawled","in_process","crawled") not null
+    in_process_started timestamps default null
 );
 
 create table if not exists domains(

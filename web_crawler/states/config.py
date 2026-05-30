@@ -15,6 +15,7 @@ class Config:
         self.PAGES_PER_DOMAIN : int | None=None
         self.MAX_RETRY : int| None =None
         self.DELAY_SEC : int| None =None
+        self.BATCH_SIZE : int| None =None
         #=============================================================
         #Redis:=======================================================
         self.REDIS_HOST : str | None=None

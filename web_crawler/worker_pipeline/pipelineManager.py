@@ -1,5 +1,5 @@
-from conn_pools.mysqlPool import connect_to_MySQL_pool
-from conn_pools.redisPool import connect_to_Redis_pool
+from dbmanager.mysqlPool import connect_to_MySQL_pool
+from dbmanager.redisPool import connect_to_Redis_pool
 
 def crawler_indexer_pipeline(config, appstate, workerstate):
     while True:
