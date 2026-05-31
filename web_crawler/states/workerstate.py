@@ -3,9 +3,9 @@
 #Every thread(worker) has its own worker state object and is NOT shared globally
 
 class WorkerState:
-    def __init__(self):
+    def __init__(self,id):
         #worker id in the worker array===================================
-        self.worker_id : int | None  = None 
+        self.worker_id : int | None  = id 
         #================================================================
         #Individual MySQL and Redis client:===============================
         self.mysql_client= None 
