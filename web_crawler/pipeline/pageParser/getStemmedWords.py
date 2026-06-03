@@ -1,0 +1,2 @@
+def getStemmedWord(soup):
+    pass

@@ -1,5 +1,5 @@
 #dependencies=====================================
-from bs4 import BeautifulSoup
+
 from queue import Queue
 import requests
 from pathlib import Path

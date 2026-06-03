@@ -1,6 +1,10 @@
 from dbmanager.mysqlPool import connect_to_MySQL_pool
 from dbmanager.redisPool import connect_to_Redis_pool
 from dbmanager.redisHydrator import hydrate_redis
+from states.webpage import WebPage
+from crawler.geturl import getUrlfromCrawlQueue
+from crawler.check_robots import check_robots
+from pageParser.parser import parseWebPage
 import mysql.connector
 import redis
 
@@ -33,13 +37,29 @@ def pipelineManager(config, appstate, workerstate):
             if not workerstate.redis_client :
                 workerstate.redis_client = redis.Redis(connection_pool=appstate.redis_pool)       
             #====================================
-            #Hydrate Redis:
+            #Hydrate Redis on startup (initialization of cache):
             if not (workerstate.redis_client.llen("crawl_queue")>0 
              and workerstate.redis_client.hlen("domains") >0):
                 hydrate_redis()
 
             #=====================================
+            #get the url from the crawl queue
+            #and call the crawling , parsing, indexing functions to operate:
 
+            #get url:
+            url  = getUrlfromCrawlQueue(workerstate)
+
+            if not url:
+                continue  # if crawl queue empty ,
+                        # go to next iteration and load queue from mysql
+            
+            #otherwise create a page object , pass the url and call the other fucntions
+    
+            page = WebPage(url)
+
+            #robots.txt compliance and then we proceed for rest of the task
+            if check_robots(page, config, workerstate):
+                parseWebPage(page)
 
 
         

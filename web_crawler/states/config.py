@@ -14,8 +14,12 @@ class Config:
         self.LINKS_PER_PAGE : int | None=None
         self.PAGES_PER_DOMAIN : int | None=None
         self.MAX_RETRY : int| None =None
-        self.DELAY_SEC : int| None =None
+        self.REQUEST_DELAY: int |None=None
+        self.CONNECTION_DELAY: int |None=None
+        self.CRAWL_DELAY: int |None=None
+        self.REQUEST_TIMEOUT:int |None =None
         self.BATCH_SIZE : int| None =None
+        self.USER_AGENT :str|None  = None
         #=============================================================
         #Redis:=======================================================
         self.REDIS_HOST : str | None=None

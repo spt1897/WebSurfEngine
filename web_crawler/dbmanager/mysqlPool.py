@@ -42,7 +42,7 @@ def connect_to_MySQL_pool(config, appstate):
 
             if not appstate.mysql_pool:
                 if tries<config.MAX_RETRY:
-                    print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.DELAY_SEC} seconds...")   
-                    time.sleep(config.DELAY_SEC)
+                    print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds...")   
+                    time.sleep(config.CONNECTION_DELAY)
                 else:
                     sys.exit(1)

@@ -8,6 +8,7 @@ create table if not exists WebPages (
     description text,
     favicon varchar(3000),
     domain varchar(100) not null,
+    scheme varchar(10) not null,
     popul_score float default 0.0,
     cred_score float default 0.0
 );
