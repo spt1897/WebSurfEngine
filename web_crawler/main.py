@@ -3,7 +3,7 @@
 from queue import Queue
 import requests
 from pathlib import Path
-from nltk.stem import PorterStemmer
+
 import nltk
 import urllib.robotparser
 

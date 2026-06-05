@@ -1,0 +1,4 @@
+
+
+def indexWebPage(page):
+    pass

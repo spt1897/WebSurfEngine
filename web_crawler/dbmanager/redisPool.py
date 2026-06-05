@@ -21,7 +21,7 @@ def connect_to_Redis_pool(config, appstate):
                 #ping the connection
                 test_client = redis.Redis(connection_pool=appstate.redis_pool)
                 if test_client.ping():
-                    print("Connected to Redis Server✅.")
+                    print("Connected to Redis Server.")
 
                 else:
                     print("Redis Server didn't respond.")

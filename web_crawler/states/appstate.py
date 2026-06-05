@@ -1,4 +1,5 @@
 import threading
+from nltk.stem import PorterStemmer
 
 #Contains important app state infos
 #globally shared variables , connection pools ,threading locks etc.
@@ -17,4 +18,7 @@ class AppState:
         self.mysql_connect_lock=threading.Lock()
         self.redis_connect_lock=threading.Lock()
         self.redis_hydrator_lock=threading.Lock()
+        #=========================================================
+        #other shared objects/tools for parsing,indexing etc.
+        self.stemmer = PorterStemmer()
         #=========================================================

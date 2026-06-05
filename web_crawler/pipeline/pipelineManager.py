@@ -54,12 +54,22 @@ def pipelineManager(config, appstate, workerstate):
                         # go to next iteration and load queue from mysql
             
             #otherwise create a page object , pass the url and call the other fucntions
-    
-            page = WebPage(url)
 
-            #robots.txt compliance and then we proceed for rest of the task
-            if check_robots(page, config, workerstate):
-                parseWebPage(page)
+            page = WebPage(url)
+            
+
+            
+            if( 
+            not workerstate.redis_client.sismember("visited_urls", page.url) #check whether the link is already a visited link
+                and
+            int(workerstate.redis_client.hget("domains",page.domain) or 0 )<=config.PAGES_PER_DOMAIN  #check if we have not crossed the domain page limit
+                and
+            check_robots(page, config, workerstate) #robots.txt compliance and then we proceed for rest of the task
+                and
+            parseWebPage(config,appstate,workerstate,page) #parse for metadata, links ,stemmed text
+            ):
+                pass
+                
 
 
         

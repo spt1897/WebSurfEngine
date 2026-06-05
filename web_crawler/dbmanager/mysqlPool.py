@@ -28,7 +28,7 @@ def connect_to_MySQL_pool(config, appstate):
                 test_cursor = test_client.cursor()
                 test_cursor.execute("SELECT 1;")
                 test_cursor.fetchone()
-                print(f"Connected to MySQL Server✅-Name:{config.DB_NAME}, Host:{config.DB_HOST}")
+                print(f"Connected to MySQL Server -Name:{config.DB_NAME}, Host:{config.DB_HOST}")
             
             except Exception as err:
                 print(f"Couldn't connect to MySQL server. Error:{err}")

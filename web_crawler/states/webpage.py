@@ -16,4 +16,4 @@ class WebPage:
         self.description:str|None = None
         self.favicon_url :str|None= None
         self.links = []
-        self.words=[]
+        self.stemmedWords_TF={}

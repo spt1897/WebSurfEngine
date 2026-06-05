@@ -26,3 +26,9 @@ class Config:
         self.REDIS_PORT : int | None=None
         self.REDIS_PASSWORD : str| None =None
         #=============================================================
+        #others(constants for parsing, indexing etc.):
+        self.stopwords =  set(["i", "is","are","am","the","a","an","be","being",
+                    "will","shall","would","should","can","not","or","and",
+                    "could","cannot","if","of","for","in","on","at","by","about"])
+        
+        #==============================================================
