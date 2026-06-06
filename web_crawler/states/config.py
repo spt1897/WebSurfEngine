@@ -20,6 +20,7 @@ class Config:
         self.REQUEST_TIMEOUT:int |None =None
         self.BATCH_SIZE : int| None =None
         self.USER_AGENT :str|None  = None
+        self.RECRAWL_TIMER_SEC = None
         #=============================================================
         #Redis:=======================================================
         self.REDIS_HOST : str | None=None

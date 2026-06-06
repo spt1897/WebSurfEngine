@@ -3,8 +3,11 @@ from dbmanager.redisPool import connect_to_Redis_pool
 from dbmanager.redisHydrator import hydrate_redis
 from states.webpage import WebPage
 from crawler.geturl import getUrlfromCrawlQueue
+from crawler.isEligibleToCrawl import isEligibleToCrawl
 from crawler.check_robots import check_robots
 from pageParser.parser import parseWebPage
+from crawler import pushLinkstoQueue
+from pageIndexer.indexer import indexWebPage
 import mysql.connector
 import redis
 
@@ -60,13 +63,16 @@ def pipelineManager(config, appstate, workerstate):
 
             
             if( 
-            not workerstate.redis_client.sismember("visited_urls", page.url) #check whether the link is already a visited link
-                and
-            int(workerstate.redis_client.hget("domains",page.domain) or 0 )<=config.PAGES_PER_DOMAIN  #check if we have not crossed the domain page limit
+            isEligibleToCrawl(config,page,workerstate) #check whether the link is already a visited link
+             #check if we have not crossed the domain page limit
                 and
             check_robots(page, config, workerstate) #robots.txt compliance and then we proceed for rest of the task
                 and
             parseWebPage(config,appstate,workerstate,page) #parse for metadata, links ,stemmed text
+                and
+            pushLinkstoQueue(page,workerstate) #push the links from the page to redis crawl queue before indexing
+                and 
+            indexWebPage(page,workerstate)
             ):
                 pass
                 

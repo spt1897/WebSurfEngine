@@ -2,7 +2,6 @@ import redis
 import mysql.connector
 import crawler_exceptions.CrawlerDBErr
 import sys
-
 #this fucntion checks whether 
 # there is any current crawl queue or crawl domain in the redis cache
 #Ensures that if a current crawling session is already on , 
@@ -74,7 +73,7 @@ def hydrate_redis(config, appstate, workerstate):
             #pushing the visited pages url from mysql to seen set in redis cache
 
             mysql_cursor.execute("""
-                SELECT url
+                SELECT url,last_crawled
                 FROM WebPages
                 ORDER BY id;
             """)
@@ -85,8 +84,8 @@ def hydrate_redis(config, appstate, workerstate):
                 if not visited_urls:
                     break
 
-                for (url,) in visited_urls:
-                    pipeline.sadd("visited_urls",url)
+                for (url,last_crawled) in visited_urls:
+                    pipeline.hset("visited_urls",url,int(last_crawled.timestamp()))
                 
                 pipeline.execute()
 

@@ -24,4 +24,5 @@ def configure_crawler(config):
     config.REQUEST_TIMEOUT=int(os.getenv("REQUEST_TIMEOUT","10").strip())
     config.BACTH_SIZE=int(os.getenv("BATCH_SIZE","10").strip())
     config.USER_AGENT=os.getenv("USER_AGENT","WebSurfBot").strip()
+    config.RECRAWL_TIMER_SEC=int(os.getenv("RECRAWL_TIMER_SEC","").strip())
     print("Environment variables loaded successfully✅!")

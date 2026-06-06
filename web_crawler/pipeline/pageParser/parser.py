@@ -4,6 +4,7 @@ from getTitle import getTitle
 from getDescription import getDescription
 from getFaviconLink import getFaviconLink
 from getLinks import getLinks
+from getImages import getImages
 from getStemmedWords import getStemmedWords_TF
 
 #Parses the page to get title, metadata, links , text
@@ -16,6 +17,7 @@ def parseWebPage(config,appstate,workerstate,page):
             page.description = getDescription(soup)
             page.favicon_url = getFaviconLink(soup,page.url)
             page.links = getLinks(config,page.url,soup,workerstate)
+            page.images= getImages(soup)
             page.words= getStemmedWords_TF(config,appstate,soup)
             return True
         
