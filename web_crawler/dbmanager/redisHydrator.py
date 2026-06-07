@@ -66,7 +66,7 @@ def hydrate_redis(config, appstate, workerstate):
             domains=mysql_cursor.fetchall()
 
             for domain , num_pages in domains:
-                pipeline.hset("domains", domain, num_pages)
+                pipeline.hset("domains", domain, int(num_pages))
 
             pipeline.execute()
 
@@ -91,9 +91,11 @@ def hydrate_redis(config, appstate, workerstate):
 
         
         except mysql.connector.Error as mysqlerr:
+            mysql_client.rollback()
             raise crawler_exceptions.CrawlerDBErr.MysqlPoolErr(f"Error during redis hydration : {mysqlerr}") from mysqlerr
         
         except redis.RedisError as rediserr:
+            mysql_client.rollback()
             raise crawler_exceptions.CrawlerDBErr.RedisPoolErr(f"Error during redis hydration : {rediserr}") from rediserr
 
         except Exception as err:

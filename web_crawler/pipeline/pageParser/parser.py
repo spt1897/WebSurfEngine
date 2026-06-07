@@ -13,12 +13,12 @@ def parseWebPage(config,appstate,workerstate,page):
     try:
         if res:  #successful html page request
             soup = BeautifulSoup(res.text,"html.parser")
-            page.title = getTitle(soup)
-            page.description = getDescription(soup)
+            page.title = getTitle(soup) or ""
+            page.description = getDescription(soup) or ""
             page.favicon_url = getFaviconLink(soup,page.url)
             page.links = getLinks(config,page.url,soup,workerstate)
             page.images= getImages(soup)
-            page.words= getStemmedWords_TF(config,appstate,soup)
+            page.stemmedWords_TF= getStemmedWords_TF(config,appstate,soup)
             return True
         
         else:

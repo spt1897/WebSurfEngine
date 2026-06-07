@@ -1,7 +1,7 @@
 create database if not exists WebSurfDB;
 use WebSurfDB;
 
-create table if not exists images(
+create table if not exists Images(
     id int AUTO_INCREMENT primary key,
     page_id int not null,
     image_url varchar(768) not null unique,
@@ -15,7 +15,7 @@ create table if not exists image_index(
     image_id int not null,
     keyword varchar(300) not null,
     tf int default 1,
-    foreign key (image_id) references images(id) on delete cascade,
+    foreign key (image_id) references Images(id) on delete cascade,
     index index_keyword (keyword),
     index index_image_id (image_id),
     unique(image_id,keyword)

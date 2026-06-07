@@ -3,7 +3,8 @@
 from urllib.parse import urlparse
 
 class WebPage:
-    def __init__(self,url):        
+    def __init__(self,url):    
+        self.id=None    
         self.url :str= url
         parsed = urlparse(url)
 

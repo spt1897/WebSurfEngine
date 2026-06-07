@@ -8,6 +8,7 @@ from crawler.check_robots import check_robots
 from pageParser.parser import parseWebPage
 from crawler import pushLinkstoQueue
 from pageIndexer.indexer import indexWebPage
+from crawler.mark_crawled import mark_crawled
 import mysql.connector
 import redis
 
@@ -67,16 +68,17 @@ def pipelineManager(config, appstate, workerstate):
              #check if we have not crossed the domain page limit
                 and
             check_robots(page, config, workerstate) #robots.txt compliance and then we proceed for rest of the task
-                and
+                    and
             parseWebPage(config,appstate,workerstate,page) #parse for metadata, links ,stemmed text
                 and
             pushLinkstoQueue(page,workerstate) #push the links from the page to redis crawl queue before indexing
                 and 
-            indexWebPage(page,workerstate)
+            indexWebPage(page,workerstate) #adds the webpage and its media and inverted indexes the page and media
             ):
-                pass
+                mark_crawled(page,workerstate)
                 
-
+            workerstate.redis_client.srem("in_process_pages",page.url)
+            
 
         
         except Exception as err:
