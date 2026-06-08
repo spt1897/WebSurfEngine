@@ -4,9 +4,10 @@ use WebSurfDB;
 create table if not exists Images(
     id int AUTO_INCREMENT primary key,
     page_id int not null,
-    image_url varchar(768) not null unique,
+    image_url varchar(768) not null,
     description text,
     foreign key(page_id) references WebPages(id) on delete cascade
+    unique(page_id,image_url)
     index index_page_id(page_id)
 );
 

@@ -30,7 +30,7 @@ def hydrate_redis(config, appstate, workerstate):
                 WHERE status = 'not_crawled'
                 ORDER BY id
                 LIMIT %s;
-            """, (config.BATCH_SIZE,))
+            """, (config.IMPORT_BATCH_SIZE,))
 
             crawl_queue = mysql_cursor.fetchall()
 

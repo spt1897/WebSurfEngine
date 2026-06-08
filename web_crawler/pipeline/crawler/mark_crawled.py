@@ -3,7 +3,7 @@ import time
 from crawler_exceptions.CrawlerDBErr import RedisPoolErr
 
 
-def mark_crawled(page,workerstate):
+def mark_crawled(page,appstate,workerstate):
     redis_client = workerstate.redis_client
     try:
         #increment the domain counter of the page
@@ -13,10 +13,13 @@ def mark_crawled(page,workerstate):
 
         #add url to visited urls list
         cur_time = int(time.time())
-        redis_client.hset("visited_urls",page.url,cur_time)
+        redis_client.hset("visited_urls",page.url,page.crawled_at)
 
         #add url to successful_crawl : makes it easy to update crawl_queue in sql
         redis_client.rpush("successful_crawl",page.url)
+
+        #push page object to parsed pages queue
+        appstate.pages_queue.put(page)
 
 
     except redis.RedisError as err:

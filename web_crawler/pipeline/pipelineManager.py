@@ -7,8 +7,9 @@ from crawler.isEligibleToCrawl import isEligibleToCrawl
 from crawler.check_robots import check_robots
 from pageParser.parser import parseWebPage
 from crawler import pushLinkstoQueue
-from pageIndexer.indexer import indexWebPage
+from pageIndexer.indexer import indexWebPages
 from crawler.mark_crawled import mark_crawled
+from synchronizer.synchronize import synchronize
 import mysql.connector
 import redis
 
@@ -72,14 +73,18 @@ def pipelineManager(config, appstate, workerstate):
             parseWebPage(config,appstate,workerstate,page) #parse for metadata, links ,stemmed text
                 and
             pushLinkstoQueue(page,workerstate) #push the links from the page to redis crawl queue before indexing
-                and 
-            indexWebPage(page,workerstate) #adds the webpage and its media and inverted indexes the page and media
             ):
-                mark_crawled(page,workerstate)
-                
+                mark_crawled(page,appstate,workerstate)
+
+        
             workerstate.redis_client.srem("in_process_pages",page.url)
             
 
+            #periodic synchronization to database 
+            # by any one worker once pages_queue has hit export_batch_size without interrupting other workers
+            # (instead of writing to DB after every page crawl)
+            if(appstate.pages_queue.qsize()>=config.EXPORT_BATCH_SIZE):
+                synchronize(config,appstate,workerstate)
         
         except Exception as err:
             pass

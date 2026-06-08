@@ -1,22 +1,20 @@
 from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
-from addUpdateWebPage import addUpdateWebPage
+from addUpdateWebPages import addUpdateWebPages
 from addUpdateImages import addUpdateImages
-from indexPage import indexPage
-from indexImage import indexImage
+from indexPages import indexPages
+from indexImages import indexImages
 
-def indexWebPage(page,workerstate):
+def indexWebPages(pages_batch,workerstate):
     try:
-        page.id = addUpdateWebPage(page,workerstate)
-        if page.id and page.stemmedWords_tf:
-            indexPage(page,workerstate)
+        #add and index webpages
+        addUpdateWebPages(pages_batch,workerstate)
+        indexPages(pages_batch,workerstate)
 
-        if page.images:
-            addUpdateImages(page,workerstate)
-            indexImage(page,workerstate)
+        #add and index images in the pages
+        addUpdateImages(pages_batch,workerstate)
+        indexImages(pages_batch,workerstate)
 
-        workerstate.mysql_client.commit()
         return True
     
     except MysqlPoolErr as mysqlErr:
-        workerstate.mysql_client.rollback()
         raise MysqlPoolErr(f"{mysqlErr}") from mysqlErr

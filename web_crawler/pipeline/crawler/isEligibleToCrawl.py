@@ -21,6 +21,7 @@ def isEligibleToCrawl(config,page,workerstate):
             return False
 
         workerstate.redis_client.sadd("in_process_pages",page.url)
+        page.crawled_at= cur_time
         return True
     
     except redis.RedisError as err:

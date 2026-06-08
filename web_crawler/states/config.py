@@ -18,7 +18,8 @@ class Config:
         self.CONNECTION_DELAY: int |None=None
         self.CRAWL_DELAY: int |None=None
         self.REQUEST_TIMEOUT:int |None =None
-        self.BATCH_SIZE : int| None =None
+        self.IMPORT_BATCH_SIZE : int| None =None
+        self.EXPORT_BATCH_SIZE : int| None =None
         self.USER_AGENT :str|None  = None
         self.RECRAWL_TIMER_SEC = None
         #=============================================================

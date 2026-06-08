@@ -1,5 +1,6 @@
 import threading
 from nltk.stem import PorterStemmer
+from queue import Queue
 
 #Contains important app state infos
 #globally shared variables , connection pools ,threading locks etc.
@@ -18,7 +19,10 @@ class AppState:
         self.mysql_connect_lock=threading.Lock()
         self.redis_connect_lock=threading.Lock()
         self.redis_hydrator_lock=threading.Lock()
+        self.mysql_sync_lock=threading.Lock()
         #=========================================================
         #other shared objects/tools for parsing,indexing etc.
         self.stemmer = PorterStemmer()
         #=========================================================
+        #globally shared parsed pages object queue which the synchronizer uses to batch writing/indexing to DB
+        pages_queue = Queue()

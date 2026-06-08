@@ -17,6 +17,7 @@ class WebPage:
         self.title :str|None= None
         self.description:str|None = None
         self.favicon_url :str|None= None
+        self.crawled_at=None
         self.links = []
         self.images = []
         self.stemmedWords_TF: dict[str,int]={}
