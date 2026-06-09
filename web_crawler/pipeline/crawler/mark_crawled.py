@@ -24,6 +24,8 @@ def mark_crawled(page,appstate,workerstate):
         #push page object to parsed pages queue
         appstate.pages_queue.put(page)
         pipeline.execute()
+        appstate.pages_crawled +=1
+        workerstate.pages_crawled += 1
 
     except redis.RedisError as err:
         raise RedisPoolErr(f"Error while marking_done!{err}") from err

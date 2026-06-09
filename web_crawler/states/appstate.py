@@ -1,6 +1,7 @@
 import threading
 from nltk.stem import PorterStemmer
 from queue import Queue
+import time
 
 #Contains important app state infos
 #globally shared variables , connection pools ,threading locks etc.
@@ -14,6 +15,10 @@ class AppState:
         #========================================================
         #worker tracker
         self.crawler_workers =[]
+        self.worker_states = []
+        self.pages_crawled:int = 0
+        self.error_pages:int =0
+        self.start_time = time.time()
         #========================================================
         #Global threading locks
         self.mysql_connect_lock=threading.Lock()
@@ -25,17 +30,17 @@ class AppState:
         self.stemmer = PorterStemmer()
         #=========================================================
         #globally shared parsed pages object queue which the synchronizer uses to batch writing/indexing to DB
-        pages_queue = Queue()
-        pages_batch=[]
+        self.pages_queue = Queue()
+        self.pages_batch=[]
         #=========================================================
         #urls not completely parsed due to infrastructure failure
-        failed_urls=Queue()
+        self.failed_urls=Queue()
         #=========================================================
         #Global Events:
-        crawler_shutdown = threading.Event()
-        crawler_pause = threading.Event()
+        self.crawler_shutdown = threading.Event()
+        self.crawler_pause = threading.Event()
         #when sql down
-        mysql_server_down= False 
+        self.mysql_server_down= False 
         #redis down
-        redis_server_down = False
+        self.redis_server_down = False
         #=========================================================

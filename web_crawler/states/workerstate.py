@@ -12,3 +12,9 @@ class WorkerState:
         self.mysql_cursor = None
         self.redis_client = None
         #=================================================================
+        #Current url being processed======================================
+        self.url = None
+        self.started_at = None
+        #pages crawled by worker==========================================
+        self.pages_crawled = 0
+        self.error_pages =0

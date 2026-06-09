@@ -21,8 +21,8 @@ class Config:
         self.IMPORT_BATCH_SIZE : int| None =None
         self.EXPORT_BATCH_SIZE : int| None =None
         self.USER_AGENT :str|None  = None
-        self.RECRAWL_TIMER_SEC = None
-        self.keep_cralwing = None   #keep crawling when sql down??
+        self.RECRAWL_TIMER_SEC:int= None
+        self.keep_cralwing : bool = None   #keep crawling when sql down??
         #=============================================================
         #Redis:=======================================================
         self.REDIS_HOST : str | None=None

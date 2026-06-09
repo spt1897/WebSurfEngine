@@ -11,6 +11,7 @@ def spawn_workers(config, appstate):
             target=pipelineManager,
             args=(config, appstate, workerstate),
               daemon=True)
+        appstate.worker_states.append(workerstate)
         appstate.crawler_workers.append(worker)
         worker.start()
         print(f"Crawler_Worker #id:{i} spawned.")
