@@ -36,7 +36,7 @@ def hydrate_redis(config, appstate, workerstate):
 
             if not crawl_queue:
                 print("No url to crawl in crawl queue in SQL server. Closing crawler.")
-                sys.exit(0)
+                appstate.crawler_shutdown.set()
             
             ids = [row[0] for row in crawl_queue]
             urls = [row[1] for row in crawl_queue]

@@ -26,4 +26,5 @@ def configure_crawler(config):
     config.EXPORT_BACTH_SIZE=int(os.getenv("EXPORT_BACTH_SIZE","10").strip())
     config.USER_AGENT=os.getenv("USER_AGENT","WebSurfBot").strip()
     config.RECRAWL_TIMER_SEC=int(os.getenv("RECRAWL_TIMER_SEC","").strip())
+    config.keep_crawling=bool(os.getenv("keep_crawling","False").strip())
     print("Environment variables loaded successfully✅!")

@@ -22,7 +22,8 @@ def connect_to_Redis_pool(config, appstate):
                 test_client = redis.Redis(connection_pool=appstate.redis_pool)
                 if test_client.ping():
                     print("Connected to Redis Server.")
-
+                    appstate.redis_server_down=False
+                    
                 else:
                     print("Redis Server didn't respond.")
                     appstate.redis_pool=None
@@ -40,4 +41,6 @@ def connect_to_Redis_pool(config, appstate):
                     print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds...")   
                     time.sleep(config.CONNECTION_DELAY)
                 else:
-                    sys.exit(1)
+                    print("Couldn't connect to redis after multiple tries.Saving data to MySQL and Shutting down!")
+                    appstate.redis_server_down=True
+                    return

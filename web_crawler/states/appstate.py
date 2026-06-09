@@ -26,3 +26,16 @@ class AppState:
         #=========================================================
         #globally shared parsed pages object queue which the synchronizer uses to batch writing/indexing to DB
         pages_queue = Queue()
+        pages_batch=[]
+        #=========================================================
+        #urls not completely parsed due to infrastructure failure
+        failed_urls=Queue()
+        #=========================================================
+        #Global Events:
+        crawler_shutdown = threading.Event()
+        crawler_pause = threading.Event()
+        #when sql down
+        mysql_server_down= False 
+        #redis down
+        redis_server_down = False
+        #=========================================================

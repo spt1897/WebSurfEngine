@@ -5,14 +5,20 @@ from sync_crawlqueue import sync_crawlqueue
 from sync_domains import sync_domains
 
 def synchronize(config,appstate,workerstate):
-    if not appstate.pages_queue.qsize() >=config.EXPORT_BATCH_SIZE:
+    if not appstate.pages_queue.qsize() >=config.EXPORT_BATCH_SIZE and not appstate.pages_batch and not appstate.crawler_shutdown.is_set():
         return
     if appstate.mysql_sync_lock.acquire(blocking = False):
         try:
-            pages_batch= [appstate.pages_queue.get() for _ in range(config.EXPORT_BATCH_SIZE)]
+            if not appstate.pages_batch:
+                if appstate.crawler_shutdown.is_set() and appstate.pages_queue.qsize() <config.EXPORT_BATCH_SIZE:
+                    while not appstate.pages_queue.empty():
+                        appstate.pages_batch.append(appstate.pages_queue.get_nowait())
+
+                else:
+                    appstate.pages_batch= [appstate.pages_queue.get_nowait() for _ in range(config.EXPORT_BATCH_SIZE)]
 
             #index all the pages in pages_batch:
-            indexWebPages(pages_batch,workerstate)
+            indexWebPages(appstate.pages_batch,workerstate)
             #update and sync crawl queue in mysql:
             sync_crawlqueue(workerstate)
             #update and sync domains table:
@@ -20,6 +26,12 @@ def synchronize(config,appstate,workerstate):
             
             #commit all to sql
             workerstate.mysql_client.commit()
+            for _ in appstate.pages_batch:
+                appstate.pages_queue.task_done()
+
+            appstate.pages_batch= []
+            
+
 
         except MysqlPoolErr as err:
             workerstate.mysql_client.rollback()
@@ -28,6 +40,9 @@ def synchronize(config,appstate,workerstate):
         except RedisPoolErr as err:
             workerstate.mysql_client.rollback()
             raise RedisPoolErr(f"{err}") from err
+        
+        finally:
+            appstate.mysql_sync_lock.release()
 
     
     else:

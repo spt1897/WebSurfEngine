@@ -6,12 +6,14 @@ from crawler.geturl import getUrlfromCrawlQueue
 from crawler.isEligibleToCrawl import isEligibleToCrawl
 from crawler.check_robots import check_robots
 from pageParser.parser import parseWebPage
-from crawler import pushLinkstoQueue
-from pageIndexer.indexer import indexWebPages
+from crawler.pushLinkstoQueue import pushLinkstoQueue
 from crawler.mark_crawled import mark_crawled
 from synchronizer.synchronize import synchronize
-import mysql.connector
+from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from crawler_exceptions.CrawlerDBErr import RedisPoolErr
+import time
 import redis
+import queue
 
 
 #The pipeline Manager function handles the entire pipeline execution:
@@ -23,18 +25,26 @@ import redis
 #updating database
 #syncing to DB periodically from redis
 def pipelineManager(config, appstate, workerstate):
-    while True:
+    while (not appstate.crawler_shutdown.is_set() 
+           or not appstate.failed_urls.empty() 
+           or not appstate.pages_queue.empty() or appstate.pages_batch) and not appstate.redis_server_down and not (appstate.mysql_server_down and not config.keep_crawling):
         try:
+            url = None #url to be crawled in this session
+            #========================================
+            #check if system is not paused (if yes hold from any operations):
+            if appstate.crawler_pause.is_set():
+                time.sleep(config.CRAWL_DELAY)
+                continue
             #====================================
             #Startup initial connection to mysql and redis (Only any one worker does it)
-            if not appstate.mysql_pool: 
-                connect_to_MySQL_pool()
+            if not appstate.mysql_pool and not (appstate.mysql_server_down and config.keep_crawling): 
+                connect_to_MySQL_pool(config,appstate)
 
             if not appstate.redis_pool:
-                connect_to_Redis_pool()
+                connect_to_Redis_pool(config,appstate)
             #===================================
             #get a connection from the pool:
-            if (not workerstate.mysql_client 
+            if not (appstate.mysql_server_down and config.keep_crawling) and (not workerstate.mysql_client 
                 or not workerstate.mysql_client.is_connected()): 
                 workerstate.mysql_client = appstate.mysql_pool.get_connection()
                 workerstate.mysql_cursor =  workerstate.mysql_client.cursor()
@@ -44,15 +54,41 @@ def pipelineManager(config, appstate, workerstate):
             #====================================
             #Hydrate Redis on startup (initialization of cache):
             if not (workerstate.redis_client.llen("crawl_queue")>0 
-             and workerstate.redis_client.hlen("domains") >0):
-                hydrate_redis()
+             and workerstate.redis_client.hlen("domains") >0) and not (appstate.mysql_server_down and config.keep_crawling):
+                hydrate_redis(config,appstate,workerstate)
+
+            #========================================================
+            #periodic synchronization to database=====================
+            # by any one worker once pages_queue has hit export_batch_size without interrupting other workers
+            # (instead of writing to DB after every page crawl)
+            if((appstate.pages_queue.qsize()>=config.EXPORT_BATCH_SIZE or appstate.pages_batch) or appstate.crawler_shutdown.is_set()) and not (appstate.mysql_server_down and config.keep_crawling):
+                synchronize(config,appstate,workerstate)
 
             #=====================================
             #get the url from the crawl queue
             #and call the crawling , parsing, indexing functions to operate:
 
             #get url:
-            url  = getUrlfromCrawlQueue(workerstate)
+            if not appstate.failed_urls.empty():
+                try:
+                    url = appstate.failed_urls.get_nowait()
+                    appstate.failed_urls.task_done()
+                except queue.Empty:
+                    continue
+                if workerstate.redis_client.hget("visited_urls",url):
+                    workerstate.redis_client.srem("in_process_pages",url)
+                    if appstate.crawler_shutdown.is_set():
+                        continue
+                    url  = getUrlfromCrawlQueue(workerstate)
+
+            ### if shutdown event has been triggered , no new parsing from crawl_queue
+            #only crawl failed urls and batch sync pages to DB 
+            
+            else:
+                if appstate.crawler_shutdown.is_set():
+                    continue
+                url  = getUrlfromCrawlQueue(workerstate)
+
 
             if not url:
                 continue  # if crawl queue empty ,
@@ -76,15 +112,28 @@ def pipelineManager(config, appstate, workerstate):
             ):
                 mark_crawled(page,appstate,workerstate)
 
+            else:
+                workerstate.redis_client.rpush("crawl_queue",url)
+
         
             workerstate.redis_client.srem("in_process_pages",page.url)
             
 
-            #periodic synchronization to database 
-            # by any one worker once pages_queue has hit export_batch_size without interrupting other workers
-            # (instead of writing to DB after every page crawl)
-            if(appstate.pages_queue.qsize()>=config.EXPORT_BATCH_SIZE):
-                synchronize(config,appstate,workerstate)
+            #rate-limiting:
+            time.sleep(config.CRAWL_DELAY)
         
-        except Exception as err:
-            pass
+
+        except MysqlPoolErr as err:
+            print(f"{err}")
+            connect_to_MySQL_pool(config,appstate)
+            workerstate.mysql_client = appstate.mysql_pool.get_connection()
+            workerstate.mysql_cursor =  workerstate.mysql_client.cursor()
+            if url:
+                appstate.failed_urls.put(url)
+
+
+        except RedisPoolErr as err:
+            print(f"{err}")
+            connect_to_Redis_pool(config,appstate)
+            if url:
+                appstate.failed_urls.put(url)

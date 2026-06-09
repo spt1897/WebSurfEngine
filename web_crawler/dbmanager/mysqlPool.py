@@ -29,7 +29,8 @@ def connect_to_MySQL_pool(config, appstate):
                 test_cursor.execute("SELECT 1;")
                 test_cursor.fetchone()
                 print(f"Connected to MySQL Server -Name:{config.DB_NAME}, Host:{config.DB_HOST}")
-            
+                appstate.mysql_server_down = False
+
             except Exception as err:
                 print(f"Couldn't connect to MySQL server. Error:{err}")
                 appstate.mysql_pool=None
@@ -45,4 +46,13 @@ def connect_to_MySQL_pool(config, appstate):
                     print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds...")   
                     time.sleep(config.CONNECTION_DELAY)
                 else:
-                    sys.exit(1)
+                    if config.keep_crawling == True:
+                        print("Couldn't connect to SQL after multiple tries. CONFIG:keep_crawling is set to 'True'. Crawling shall continue without sync or hydration.")
+                        print("If you want to change this, use 'set keep_crawling false' to force shut crawling operations.")
+                        print("To invoke reconnection with SQL, use 'reconnect-mysql' .")
+                        print("To pause crawling temporarily use 'pause' and 'resume' to resume crawling.")
+                    else:
+                        print("Couldn't connect to SQL after multiple tries. CONFIG:keep_crawling is set to 'False'. Force shutting crawler.")
+
+                    appstate.mysql_server_down = True
+                    return

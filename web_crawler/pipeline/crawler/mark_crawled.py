@@ -6,21 +6,24 @@ from crawler_exceptions.CrawlerDBErr import RedisPoolErr
 def mark_crawled(page,appstate,workerstate):
     redis_client = workerstate.redis_client
     try:
+        
+        pipeline = redis_client.pipeline()
+        
         #increment the domain counter of the page
-        if(redis_client.hget("visited_urls",page.url)):
+        if not (redis_client.hget("visited_urls",page.url)):
             cur_domain_count=int(redis_client.hget("domains",page.domain) or 0)
-            redis_client.hset("domains",page.domain,cur_domain_count+1)
+            pipeline.hset("domains",page.domain,cur_domain_count+1)
 
         #add url to visited urls list
         cur_time = int(time.time())
-        redis_client.hset("visited_urls",page.url,page.crawled_at)
+        pipeline.hset("visited_urls",page.url,page.crawled_at)
 
         #add url to successful_crawl : makes it easy to update crawl_queue in sql
-        redis_client.rpush("successful_crawl",page.url)
+        pipeline.rpush("successful_crawl",page.url)
 
         #push page object to parsed pages queue
         appstate.pages_queue.put(page)
-
+        pipeline.execute()
 
     except redis.RedisError as err:
-        raise RedisPoolErr(f"Error while marking done!{err}") from err
+        raise RedisPoolErr(f"Error while marking_done!{err}") from err
