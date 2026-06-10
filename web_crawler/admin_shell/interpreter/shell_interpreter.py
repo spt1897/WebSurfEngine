@@ -1,7 +1,7 @@
 from datetime import datetime
 import time
-from admin_shell.shell_commands import Command
-from states.configure import configure_crawler
+from web_crawler.admin_shell.interpreter.shell_commands import Command
+from web_crawler.states.configure import configure_crawler
 
 #argument errors:
 class ArgumentError(Exception):
@@ -17,18 +17,26 @@ class ValueOutOfBoundsError(ArgumentError):
     pass
 
 
-def shell_execute(command, config, appstate):
+def shell_execute(command, config, appstate,terminal):
     exec_result = ""
     match command.cmd:
 
         #set <var> <val>
         case Command.SET:
             var = command.args[0]
+            original_var = var 
             value = None
             try:
+                if not hasattr(config, var):
+                    var = var.replace("-","_")
+                    if not hasattr(config,var):
+                        var= var.upper()
+                        if not hasattr(config,var):
+                            var=var.lower()
+                          
                 var_type = type(getattr(config,var))
             except AttributeError:
-                raise VarNameError(f"Variable:'{var}' does not exist in configuration.")
+                raise VarNameError(f"Variable:'{original_var}' (or similar name) does not exist in configuration.")
 
             if var_type ==int :
                 try:
@@ -64,31 +72,43 @@ def shell_execute(command, config, appstate):
             
             exec_result = f"Successfully set {var}:{value}."
 
+            if var.startswith("DB") or var.startswith("REDIS") or var=="NUM_WORKERS":
+                exec_result+=f"\n[IMPORTANT] Config variable: '{var}' is an initialization variable and requires 'restart' to be applicable.\n'set' only changes the value in this case but does enforce its use."
+
 
         #get <var>
         case Command.GET:
             var = command.args[0]
+            original_var = var 
             try:
+                if not hasattr(config, var):
+                    var = var.replace("-","_")
+                    if not hasattr(config,var):
+                        var= var.upper()
+                        if not hasattr(config,var):
+                            var=var.lower()
+
                 exec_result = f"{var} : {getattr(config,var)}"
             except AttributeError:
-                raise VarNameError(f"Variable:'{var}' does not exist in configuration.")
+                raise VarNameError(f"Variable:'{original_var}' (or similar name) does not exist in configuration.")
             
         case Command.HELP:
-            available_commands = ("'set <variable> <value>' (sets or changes the value of a configuration variable. DB,redis credentials or num_worker changes require 'restart' to apply.)"
-            "\n'get <variable>' (gets the current value of a config variable)"
-            "\n'get-db' (gets all the database credentials)"
-            "\n'get-redis' (gets all the redis credentials)"
-            "\n'status' (gets crawler status: num_workers,pages_queue_size, pages_batch_size,user_agent and other necessary values)"
-            "\n'status-workers' (views current status of all workers)"
-            "\n'status-worker <id>' (views current status of a specific worker(id starts from 0))"
-            "\n'reconnect-db' (invokes reconnection to database manually during crawl-only mode after multiple failed connection tries)"
-            "\n'pause' (pauses the crawlers from any task)"
-            "\n'resume' (resumes the crawler after pause)"
-            "\n'shutdown' (shuts the crawler down gracefully after finishing all important tasks(processing sync and failed urls))"
-            "\n'force-shutdown' (force fully shuts the crawler despite any pending sync or failed urls)"
-            "\n'restart' (restarts the crawler after graceful 'shutdown' with current modified config settings)"
-            "\n'help' (helps user on how to use the admin shell)"
-            "\n'restore-default' (restores default configuration settings from environment variables)")
+            available_commands = ("-'set <variable> <value>' (sets or changes the value of a configuration variable. DB,redis credentials or num_worker changes require 'restart' to apply.)"
+            "\n-'get <variable>' (gets the current value of a config variable)"
+            "\n-'get-db' (gets all the database credentials)"
+            "\n-'get-redis' (gets all the redis credentials)"
+            "\n-'status' (gets crawler status: num_workers,pages_queue_size, pages_batch_size,user_agent and other necessary values)"
+            "\n-'status-workers' (views current status of all workers)"
+            "\n-'status-worker <id>' (views current status of a specific worker(id starts from 0))"
+            "\n-'emergency-reconnect-db' (invokes reconnection to database manually during crawl-only mode after multiple failed connection tries)"
+            "\n-'pause' (pauses the crawlers from any task)"
+            "\n-'resume' (resumes the crawler after pause)"
+            "\n-'shutdown' (shuts the crawler down gracefully after finishing all important tasks(processing sync and failed urls))"
+            "\n-'force-shutdown' (force fully shuts the crawler despite any pending sync or failed urls)"
+            "\n-'restart' (restarts the crawler after graceful 'shutdown' with current modified config settings)"
+            "\n-'help' (helps user on how to use the admin shell)"
+            "\n-'restore-default' (restores default configuration settings from environment variables)"
+            "\n")
 
             exec_result= f"ADMIN SHELL HELP------------------------\n\nWelcome to Websurf Crawler Administrator shell(CLI).\nYou can control(shut,pause,resume,reconnect) the crawler or view/change configuration settings via the shell commands.\n\nAvailable commands:\n{available_commands}"
 
@@ -157,8 +177,12 @@ def shell_execute(command, config, appstate):
             exec_result = "Crawler Operations Resumed."
         
         case Command.RECONNECT_DB:
-            appstate.mysql_server_down = False
-            exec_result= "Trying reconnection to Database."
+            if appstate.mysql_server_down and config.keep_crawling:
+                appstate.mysql_server_down = False
+                exec_result= "Trying reconnection to Database."
+            
+            else:
+                exec_result = "Cannot use command: 'emergency-reconnect-db' during normal operation.\nIt is available only when DB server is down and keep_crawling: True"
 
         case Command.SHUTDOWN:
             pass
@@ -171,7 +195,11 @@ def shell_execute(command, config, appstate):
 
         case Command.RESTORE_DEFAULT:
             configure_crawler(config)
+            exec_result = "Default Configurations restored successfully!"
             
-        
+        case Command.CLEAR:
+            with terminal.msg_lock:
+                terminal.render_buffer = []
+                exec_result="@{clear}"
 
     return exec_result

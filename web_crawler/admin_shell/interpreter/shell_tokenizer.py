@@ -35,12 +35,12 @@ def tokenize(line:str) -> list[str]:
             word+=char
     
     if inside_double_quotes:
-        raise Unclosed_Double_Quotes()
+        raise Unclosed_Double_Quotes('Syntax Error: Unclosed " (Double Quotes).')
     
     if inside_single_quotes:
-        raise Unclosed_Single_Quotes()
+        raise Unclosed_Single_Quotes("Syntax Error: Unclosed ' (Single Quotes).")
     
     if not words:
-         raise EmptyLine()
+         raise EmptyLine("Syntax Error: Must have some valid text in quotations.")
     
     return words

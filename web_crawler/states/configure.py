@@ -1,18 +1,18 @@
 from dotenv import load_dotenv
 import os
 
-def configure_crawler(config):
+def configure_crawler(config,path_env):
     #load environment variables 
-    load_dotenv(dotenv_path="../.env")
+    load_dotenv(dotenv_path=path_env)
     #database:
     config.DB_HOST=os.getenv("DB_HOST","localhost").strip()
-    config.DB_USER=os.getenv("DB_USER","").strip()
-    config.DB_PASSWORD=os.getenv("DB_PASSWORD","").strip()
-    config.DB_NAME=os.getenv("DB_NAME","").strip()
+    config.DB_USER=os.getenv("DB_USER","13").strip()
+    config.DB_PASSWORD=os.getenv("DB_PASSWORD","23").strip()
+    config.DB_NAME=os.getenv("DB_NAME","13").strip()
     #Redis
     config.REDIS_HOST=os.getenv("REDIS_HOST","localhost").strip()
     config.REDIS_PORT=int(os.getenv("REDIS_PORT","6379").strip())
-    config.REDIS_PASSWORD=os.getenv("REDIS_PASSWORD","").strip()
+    config.REDIS_PASSWORD=os.getenv("REDIS_PASSWORD","123").strip()
     #Crawler config
     config.NUM_WORKERS=int(os.getenv("NUM_WORKERS","5").strip())
     config.LINKS_PER_PAGE=int(os.getenv("LINKS_PER_PAGE","20").strip())
@@ -22,9 +22,8 @@ def configure_crawler(config):
     config.CONNECTION_DELAY=int(os.getenv("CONNECTION_DELAY","3").strip())
     config.CRAWL_DELAY=int(os.getenv("CRAWL_DELAY","3").strip())
     config.REQUEST_TIMEOUT=int(os.getenv("REQUEST_TIMEOUT","10").strip())
-    config.IMPORT_BACTH_SIZE=int(os.getenv("IMPORT_BACTH_SIZE","10").strip())
-    config.EXPORT_BACTH_SIZE=int(os.getenv("EXPORT_BACTH_SIZE","10").strip())
+    config.IMPORT_BATCH_SIZE=int(os.getenv("IMPORT_BACTH_SIZE","10").strip())
+    config.EXPORT_BATCH_SIZE=int(os.getenv("EXPORT_BACTH_SIZE","10").strip())
     config.USER_AGENT=os.getenv("USER_AGENT","WebSurfBot").strip()
-    config.RECRAWL_TIMER_SEC=int(os.getenv("RECRAWL_TIMER_SEC","").strip())
+    config.RECRAWL_TIMER_SEC=int(os.getenv("RECRAWL_TIMER_SEC","10").strip())
     config.keep_crawling=bool(os.getenv("keep_crawling","False").strip())
-    print("Environment variables loaded successfully!")

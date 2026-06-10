@@ -19,7 +19,7 @@ def hydrate_redis(config, appstate, workerstate):
 
             if(redis_client.llen("crawl_queue")>0 
              and redis_client.hlen("domains") >0):
-                print("A crawling session is already active. Continuing the same.")
+                appstate.msg_queue.put(("INFO","Hydrator","A crawling session is already active. Continuing the same."))
                 return
             
             pipeline = redis_client.pipeline()
@@ -35,7 +35,7 @@ def hydrate_redis(config, appstate, workerstate):
             crawl_queue = mysql_cursor.fetchall()
 
             if not crawl_queue:
-                print("No url to crawl in crawl queue in SQL server. Closing crawler.")
+                appstate.msg_queue.put(("INFO","Hydrator","No url to crawl in crawl queue in SQL server. Closing crawler."))
                 appstate.crawler_shutdown.set()
             
             ids = [row[0] for row in crawl_queue]
@@ -99,7 +99,7 @@ def hydrate_redis(config, appstate, workerstate):
             raise crawler_exceptions.CrawlerDBErr.RedisPoolErr(f"Error during redis hydration : {rediserr}") from rediserr
 
         except Exception as err:
-            print(f"Error while hydrating redis: {err}")
+            appstate.msg_queue.put(("INFO","Hydrator",f"Error while hydrating redis: {err}"))
             raise
             
 

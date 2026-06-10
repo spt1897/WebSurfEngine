@@ -1,5 +1,5 @@
-from admin_shell.shell_commands import command_map
-from admin_shell.shell_commands import command_expected_args
+from web_crawler.admin_shell.interpreter.shell_commands import command_map
+from web_crawler.admin_shell.interpreter.shell_commands import command_expected_args
 
 #parsed command object
 class ParsedCommand:

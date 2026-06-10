@@ -7,7 +7,7 @@ class Command(Enum):
     GET_DB = 3 #command: 'get-db' (gets all the database credentials)
     GET_REDIS = 4 #command: 'get-redis' (gets all the redis credentials)
     STATUS = 5 #command: 'status' (gets crawler status: num_workers,pages_queue_size, pages_batch_size and other necessary values)
-    RECONNECT_DB = 6 #command: 'reconnect-db' (invokes reconnection to database manually after multiple failed connection tries)
+    RECONNECT_DB = 6 #command: 'emergency-reconnect-db' (invokes reconnection to database manually after multiple failed connection tries)
     PAUSE = 7 #command: 'pause' (pauses the crawlers from any task)
     RESUME = 8 #command: 'resume' (resumes the crawler after pause)
     SHUTDOWN = 9 #command: 'shutdown' (shuts the crawler down gracefully after finishing all important tasks(processing sync and failed urls))
@@ -17,6 +17,7 @@ class Command(Enum):
     STATUS_WORKERS =13 #command: 'status-workers' (views current status of all workers)
     STATUS_WORKER =14 #command: 'status-worker <id>' (views current status of a specific worker(id starts from 0))
     RESTORE_DEFAULT =15 #command: 'restore-default' (restores default configuration settings from environment variables)
+    CLEAR =16
 
 #shell commands mapped to command enums
 command_map = {
@@ -27,7 +28,7 @@ command_map = {
     "status": Command.STATUS,
     "status-workers": Command.STATUS_WORKERS,
     "status-worker": Command.STATUS_WORKER,
-    "reconnect-db": Command.RECONNECT_DB,
+    "emergency-reconnect-db": Command.RECONNECT_DB,
     "pause": Command.PAUSE,
     "resume":Command.RESUME,
     "shutdown":Command.SHUTDOWN,
@@ -37,7 +38,11 @@ command_map = {
     "restart":Command.RESTART,
     "help":Command.HELP,
     "h":Command.HELP,
-    "restore-default":Command.RESTORE_DEFAULT
+    "restore-default":Command.RESTORE_DEFAULT,
+    "clear" : Command.CLEAR,
+    "cls" : Command.CLEAR,
+    "clean": Command.CLEAR,
+    "clr": Command.CLEAR
 }
 
 command_expected_args = {

@@ -28,11 +28,11 @@ def connect_to_MySQL_pool(config, appstate):
                 test_cursor = test_client.cursor()
                 test_cursor.execute("SELECT 1;")
                 test_cursor.fetchone()
-                print(f"Connected to MySQL Server -Name:{config.DB_NAME}, Host:{config.DB_HOST}")
+                appstate.msg_queue.put(("SUCCESS","MySQL",f"Connected to MySQL Server.\nName:{config.DB_NAME}, Host:{config.DB_HOST}"))
                 appstate.mysql_server_down = False
 
             except Exception as err:
-                print(f"Couldn't connect to MySQL server. Error:{err}")
+                appstate.msg_queue.put(("ERROR","MySQL",f"Couldn't connect to MySQL server.\nError:{err}"))
                 appstate.mysql_pool=None
             
             finally:
@@ -43,16 +43,16 @@ def connect_to_MySQL_pool(config, appstate):
 
             if not appstate.mysql_pool:
                 if tries<config.MAX_RETRY:
-                    print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds...")   
+                    appstate.msg_queue.put(("INFO","MySQL",f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds..."))   
                     time.sleep(config.CONNECTION_DELAY)
                 else:
                     if config.keep_crawling == True:
-                        print("Couldn't connect to SQL after multiple tries. CONFIG:keep_crawling is set to 'True'. Crawling shall continue without sync or hydration.")
-                        print("If you want to change this, use 'set keep_crawling false' to force shut crawling operations.")
-                        print("To invoke reconnection with SQL, use 'reconnect-mysql' .")
-                        print("To pause crawling temporarily use 'pause' and 'resume' to resume crawling.")
+                        appstate.msg_queue.put(("ERROR","MySQL","Couldn't connect to SQL after multiple tries.\nCONFIG:keep_crawling is set to 'True'. Crawling shall continue without sync or hydration."))
+                        appstate.msg_queue.put(("INFO","MySQL","If you want to change this, use 'set keep_crawling false' to force shut crawling operations."))
+                        appstate.msg_queue.put(("INFO","MySQL","To invoke reconnection with SQL, use 'reconnect-mysql' ."))
+                        appstate.msg_queue.put(("INFO","MySQL","To pause crawling temporarily use 'pause' and 'resume' to resume crawling."))
                     else:
-                        print("Couldn't connect to SQL after multiple tries. CONFIG:keep_crawling is set to 'False'. Force shutting crawler.")
+                        appstate.msg_queue.put(("ERROR","MySQL","Couldn't connect to SQL after multiple tries.\nCONFIG:keep_crawling is set to 'False'. Force shutting crawler."))
 
                     appstate.mysql_server_down = True
                     return

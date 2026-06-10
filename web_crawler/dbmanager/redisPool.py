@@ -21,26 +21,26 @@ def connect_to_Redis_pool(config, appstate):
                 #ping the connection
                 test_client = redis.Redis(connection_pool=appstate.redis_pool)
                 if test_client.ping():
-                    print("Connected to Redis Server.")
+                    appstate.msg_queue.put(("SUCCESS","Redis","Connected to Redis Server."))
                     appstate.redis_server_down=False
                     
                 else:
-                    print("Redis Server didn't respond.")
+                    appstate.msg_queue.put(("ERROR","Redis","Redis Server didn't respond."))
                     appstate.redis_pool=None
 
             except redis.exceptions.AuthenticationError:
-                print("Couldn't connect to Redis! Authentication Error.")
+                appstate.msg_queue.put(("ERROR","Redis","Couldn't connect to Redis! Authentication Error."))
                 appstate.redis_pool= None 
             
             except Exception as err:
-                print(f"Couldn't connect to Redis server. Error:{err}")
+                appstate.msg_queue.put(("ERROR","Redis",f"Couldn't connect to Redis server.\nError:{err}"))
                 appstate.redis_pool=None
             
             if not appstate.redis_pool:
                 if tries<config.MAX_RETRY:
-                    print(f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds...")   
+                    appstate.msg_queue.put(("INFO","Redis",f"{tries}/{config.MAX_RETRY} tries. Retrying in {config.CONNECTION_DELAY} seconds..."))
                     time.sleep(config.CONNECTION_DELAY)
                 else:
-                    print("Couldn't connect to redis after multiple tries.Saving data to MySQL and Shutting down!")
+                    appstate.msg_queue.put(("ERROR","Redis","Couldn't connect to redis after multiple tries.Saving data to MySQL and Shutting down!"))
                     appstate.redis_server_down=True
                     return

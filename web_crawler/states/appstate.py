@@ -44,3 +44,6 @@ class AppState:
         #redis down
         self.redis_server_down = False
         #=========================================================
+        #reference to msg_queue for workers to log errors/progress:
+        self.msg_queue = None
+        #=========================================================

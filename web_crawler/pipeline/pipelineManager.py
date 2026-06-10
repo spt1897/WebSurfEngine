@@ -126,7 +126,7 @@ def pipelineManager(config, appstate, workerstate):
         
 
         except MysqlPoolErr as err:
-            print(f"{err}")
+            appstate.msg_queue.put(("ERROR",f"Worker#{workerstate.worker_id}",f"{err}"))
             connect_to_MySQL_pool(config,appstate)
             workerstate.mysql_client = appstate.mysql_pool.get_connection()
             workerstate.mysql_cursor =  workerstate.mysql_client.cursor()
@@ -135,7 +135,7 @@ def pipelineManager(config, appstate, workerstate):
 
 
         except RedisPoolErr as err:
-            print(f"{err}")
+            appstate.msg_queue.put(("ERROR",f"Worker#{workerstate.worker_id}",f"{err}"))
             connect_to_Redis_pool(config,appstate)
             if workerstate.url:
                 appstate.failed_urls.put(workerstate.url)
