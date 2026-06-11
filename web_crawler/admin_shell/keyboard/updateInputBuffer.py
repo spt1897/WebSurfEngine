@@ -1,12 +1,21 @@
 from web_crawler.admin_shell.keyboard.keys import Key
 from web_crawler.admin_shell.keyboard.key_api import read_key
-
+from web_crawler.admin_shell.keyboard.keyHit import keyHit
+import time
 
 
 def updateInputBuffer(terminal,config):
     
     while not terminal.shutdown_achieved:
         
+        if not terminal.normal_mode:
+            time.sleep(0.02)
+            continue
+        
+        if not keyHit():
+            time.sleep(0.02)
+            continue
+
         key = read_key()
 
         with terminal.input_lock:
@@ -24,14 +33,18 @@ def updateInputBuffer(terminal,config):
                             terminal.input_buffer = terminal.input_buffer[:terminal.cursor_pos] + char + terminal.input_buffer[terminal.cursor_pos:]
 
                         terminal.cursor_pos+=1
+                        
                     
                     case Key.HOME:
                         terminal.cursor_pos=0
+                        
                     
                     case Key.END:
                         terminal.cursor_pos = len(terminal.input_buffer)
+                        
 
                     case Key.ENTER:
+                        
                         if terminal.input_buffer:
                             terminal.inputLine = terminal.input_buffer
                             terminal.input_buffer =""
@@ -41,12 +54,16 @@ def updateInputBuffer(terminal,config):
                             if not terminal.inputLine.lower().strip() in ["clear","cls","clean","clr"]:
                                 terminal.msg_queue.put(("","",f"{config.USER_AGENT}> {terminal.inputLine}"))
 
+                        
+
                     case Key.BACKSPACE:
                         index = terminal.cursor_pos -1
 
                         if index >=0 and index <len(terminal.input_buffer):
                             terminal.input_buffer = terminal.input_buffer[:index] +terminal.input_buffer[index+1:]
                             terminal.cursor_pos -=1
+
+                        
                         
                     case Key.DELETE:
                         index = terminal.cursor_pos
@@ -54,13 +71,17 @@ def updateInputBuffer(terminal,config):
                         if index >=0 and index <len(terminal.input_buffer):
                             terminal.input_buffer = terminal.input_buffer[:index] +terminal.input_buffer[index+1:]
                     
+                        
                     case Key.ARROW_RIGHT:
                         if terminal.cursor_pos <len(terminal.input_buffer):
                             terminal.cursor_pos +=1
+                        
+                        
                     
                     case Key.ARROW_LEFT:
                         if terminal.cursor_pos >0:
                             terminal.cursor_pos -=1
+                        
                     
                     case Key.ARROW_UP:
                         if terminal.nav_cmd_hist == len(terminal.command_history):
@@ -73,6 +94,7 @@ def updateInputBuffer(terminal,config):
                         if prev != terminal.nav_cmd_hist:
                             terminal.input_buffer = terminal.command_history[terminal.nav_cmd_hist]
                             terminal.cursor_pos = len(terminal.input_buffer)
+
 
                     case Key.ARROW_DOWN:
                         prev = terminal.nav_cmd_hist
@@ -87,6 +109,7 @@ def updateInputBuffer(terminal,config):
                                 terminal.input_buffer = terminal.command_history[terminal.nav_cmd_hist]
                                 
                             terminal.cursor_pos = len(terminal.input_buffer)
+
         
         terminal.needs_redraw=True
 

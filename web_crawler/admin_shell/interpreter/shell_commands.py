@@ -38,6 +38,7 @@ command_map = {
     "restart":Command.RESTART,
     "help":Command.HELP,
     "h":Command.HELP,
+    "info":Command.HELP,
     "restore-default":Command.RESTORE_DEFAULT,
     "clear" : Command.CLEAR,
     "cls" : Command.CLEAR,

@@ -5,6 +5,7 @@ import threading
 class TerminalState():
     def __init__(self):
         #input
+        self.normal_mode=True
         self.input_buffer = ""
         self.inputLine = ""
         self.cur_input_line_on =""
@@ -19,5 +20,6 @@ class TerminalState():
         self.render_buffer = []
         #shutdown_achived(true when shutdown() function recognises all threads and tasks are complete and shutdown)
         self.shutdown_achieved= False
+        self.restart=True
         #needs redraw
         self.needs_redraw = True

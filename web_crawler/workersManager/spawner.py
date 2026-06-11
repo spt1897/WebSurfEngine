@@ -14,4 +14,4 @@ def spawn_workers(config, appstate):
         appstate.worker_states.append(workerstate)
         appstate.crawler_workers.append(worker)
         worker.start()
-        print(f"Crawler_Worker #id:{i} spawned.")
+        appstate.msg_queue.put(("[INFO]","[Spawner]",f"Crawler_Worker #id:{i} spawned."))

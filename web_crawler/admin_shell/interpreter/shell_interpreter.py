@@ -2,6 +2,11 @@ from datetime import datetime
 import time
 from web_crawler.admin_shell.interpreter.shell_commands import Command
 from web_crawler.states.configure import configure_crawler
+from web_crawler.workersManager.shutdownHandler import force_shutdown, shutdown
+from web_crawler.admin_shell.keyboard.key_api import read_key
+from web_crawler.admin_shell.keyboard.keys import Key
+from web_crawler.admin_shell.keyboard.switch_terminal_mode import switch_terminal_mode
+
 
 #argument errors:
 class ArgumentError(Exception):
@@ -15,6 +20,53 @@ class VarNameError(ArgumentError):
 
 class ValueOutOfBoundsError(ArgumentError):
     pass
+
+
+def status(config, appstate):
+    cur_time = time.time()
+    exec_result = ( f"Crawler Status:"
+                    f"\nUser-Agent: {config.USER_AGENT}"
+                    f"\nSession started at: {datetime.fromtimestamp(appstate.start_time).strftime('%Y-%m-%d %H:%M:%S')}"
+                    f"\nSeconds passed(since start): {cur_time-appstate.start_time}"
+                    f"\nActive Workers: {len(appstate.crawler_workers)}"
+                    f"\nTotal Pages Crawled (Success): {appstate.pages_crawled}"
+                    f"\nPages failed(in request/robots.txt/parsing): {appstate.error_pages}"
+                    f"\nPages failed due to DB/Redis issue(to be crawled): {appstate.failed_urls.qsize()}"
+                    f"\nPages(parsed) in Queue to be Indexed: {appstate.pages_queue.qsize()}"
+                    f"\nExport Batch Size: {config.EXPORT_BATCH_SIZE}")
+    
+    return exec_result
+
+
+
+def status_workers(config,appstate):
+    exec_result = ( f"Worker Status:"
+                    f"Active Workers: {len(appstate.crawler_workers)}\n\n")
+            
+    for worker in appstate.worker_states:
+        exec_result += (f"Worker#{worker.worker_id}:"
+                        f"\nTotal Pages Crawled (Success): {worker.pages_crawled}"
+                        f"\nPages failed(in request/robots.txt/parsing): {worker.error_pages}"
+                        f"\nCurrent url under process: {worker.url}"
+                        f"\nCurrent url started at: {datetime.fromtimestamp(worker.started_at).strftime('%Y-%m-%d %H:%M:%S') if worker.started_at else "N/A"}"
+                        f"\n\n")
+        
+    return exec_result
+
+
+
+def status_worker(appstate,id):
+    worker = appstate.worker_states[id]
+    exec_result = (f"Status - Worker#{worker.worker_id}:"
+                    f"\nTotal Pages Crawled (Success): {worker.pages_crawled}"
+                    f"\nPages failed(in request/robots.txt/parsing): {worker.error_pages}"
+                    f"\nCurrent url under process: {worker.url}"
+                    f"\nCurrent url started at: {datetime.fromtimestamp(worker.started_at).strftime('%Y-%m-%d %H:%M:%S') if worker.started_at else "N/A"}"
+                    f"\n\n")
+    
+    return exec_result
+
+
 
 
 def shell_execute(command, config, appstate,terminal):
@@ -126,29 +178,11 @@ def shell_execute(command, config, appstate,terminal):
                            f"\nPassword: {config.REDIS_PASSWORD}")
 
         case Command.STATUS:
-            cur_time = time.time()
-            exec_result = (f"Crawler Status:"
-                           f"\nUser-Agent: {config.USER_AGENT}"
-                           f"\nSession started at: {datetime.fromtimestamp(appstate.start_time).strftime('%Y-%m-%d %H:%M:%S')}"
-                           f"\nSeconds passed(since start): {cur_time-appstate.start_time}"
-                           f"\nActive Workers: {len(appstate.crawler_workers)}"
-                           f"\nTotal Pages Crawled (Success): {appstate.pages_crawled}"
-                           f"\nPages failed(in request/robots.txt/parsing): {appstate.error_pages}"
-                           f"\nPages failed due to DB/Redis issue(to be crawled): {appstate.failed_urls.qsize()}"
-                           f"\nPages(parsed) in Queue to be Indexed: {appstate.pages_queue.qsize()}"
-                           f"\nExport Batch Size: {config.EXPORT_BATCH_SIZE}")
-            
+            exec_result= status(config,appstate)
+
+
         case Command.STATUS_WORKERS:
-            exec_result = (f"Worker Status:"
-                           f"Active Workers: {len(appstate.crawler_workers)}\n\n")
-            
-            for worker in appstate.worker_states:
-                exec_result += (f"Worker#{worker.worker_id}:"
-                                f"\nTotal Pages Crawled (Success): {worker.pages_crawled}"
-                                f"\nPages failed(in request/robots.txt/parsing): {worker.error_pages}"
-                                f"\nCurrent url under process: {worker.url}"
-                                f"\nCurrent url started at: {datetime.fromtimestamp(worker.started_at).strftime('%Y-%m-%d %H:%M:%S') if worker.started_at else "N/A"}"
-                                f"\n\n")
+           exec_result = status_workers(config,appstate)
 
         case Command.STATUS_WORKER:
             try:
@@ -159,13 +193,8 @@ def shell_execute(command, config, appstate,terminal):
             if id>len(appstate.worker_states)-1 or id <0:
                 raise ValueOutOfBoundsError(f"Value out of bounds Error. Worker with id:{id} does not exist in current session.(Id ranges from 0 to (num_worker - 1))")
             
-            worker = appstate.worker_states[id]
-            exec_result = (f"Status - Worker#{worker.worker_id}:"
-                            f"\nTotal Pages Crawled (Success): {worker.pages_crawled}"
-                            f"\nPages failed(in request/robots.txt/parsing): {worker.error_pages}"
-                            f"\nCurrent url under process: {worker.url}"
-                            f"\nCurrent url started at: {datetime.fromtimestamp(worker.started_at).strftime('%Y-%m-%d %H:%M:%S') if worker.started_at else "N/A"}"
-                            f"\n\n")
+            exec_result = status_worker(appstate,id)
+        
 
 
         case Command.PAUSE:
@@ -185,21 +214,61 @@ def shell_execute(command, config, appstate,terminal):
                 exec_result = "Cannot use command: 'emergency-reconnect-db' during normal operation.\nIt is available only when DB server is down and keep_crawling: True"
 
         case Command.SHUTDOWN:
-            pass
+            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nCompleting all incomplete parses...\nSyncing unsynced data to Database...\n"))
+            shutdown(appstate)
+            appstate.msg_queue.put(("SUCCESS","Crawler","Successfully completed all processes and synced to Database. Exiting REPL..."))
+            time.sleep(1)
+            appstate.msg_queue.join()
+            import sys
+            sys.stdout.flush()
+            terminal.shutdown_achieved = True
+
+
 
         case Command.RESTART:
-            pass
+            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nCompleting all incomplete parses...\nSyncing unsynced data to Database...\n"))
+            shutdown(appstate)
+            appstate.msg_queue.put(("SUCCESS","Crawler","Successfully completed all processes and synced to Database."))
+            terminal.shutdown_achieved = True
+            terminal.restart = True
+           
 
         case Command.FORCE_SHUTDOWN:
-            pass
+            appstate.msg_queue.put(("WARNING","Admin-REPL",
+                                    "\nUsing 'force-shutdown' force kills all workers and shutsdown the crawler immediately."
+                                    +"\nAny unsynced parsed data will not be saved to Database and will be lost."
+                                    +"\nAll incomplete or in process urls will be not be processed."
+                                    +"\nFor safe shutdown use: 'shutdown' or 'exit'."
+                                    +"\nAre you sure you want to Force Shutdown? Press: [Y/N]"))
+            
+            #get control from updateinputbuffer to this function to take user input
+            #flush any existing data
+            switch_terminal_mode(terminal)
+
+            key = None
+            while not key:
+                key= read_key() #take input
+
+            if key[0] ==Key.CHAR and key[1].lower()=='y':
+                force_shutdown()
+            else:
+                appstate.msg_queue.put(("INFO","Admin-REPL","Force Shutdown Aborted."))
+                exec_result="@{clear}"
+            
+            #flush again before handing over control back to updateinputbuffer
+            switch_terminal_mode(terminal)
+            
+            
 
         case Command.RESTORE_DEFAULT:
-            configure_crawler(config)
+            configure_crawler(config,".env")
             exec_result = "Default Configurations restored successfully!"
             
         case Command.CLEAR:
             with terminal.msg_lock:
                 terminal.render_buffer = []
                 exec_result="@{clear}"
+
+        
 
     return exec_result

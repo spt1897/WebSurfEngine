@@ -2,9 +2,7 @@ from web_crawler.states.appstate import AppState
 from web_crawler.states.config import Config
 from web_crawler.states.terminal import TerminalState
 from web_crawler.states.configure import configure_crawler
-from web_crawler.admin_shell.interpreter.shell_tokenizer import tokenize
-from web_crawler.admin_shell.interpreter.shell_parser import parser
-from web_crawler.admin_shell.interpreter.shell_interpreter import shell_execute
+from web_crawler.admin_shell.interpreter.interpreterHandler import interpreterHandler
 from web_crawler.admin_shell.keyboard.updateInputBuffer import updateInputBuffer
 import threading
 import sys
@@ -28,40 +26,49 @@ def append_msg_to_render_buffer(terminal):
 #Calculates no. of lines due to '\n' no. of lines due to text wrapping and determines cursor position to be redrawn, 
 # then renders the msgs in render_buffer and redraws prompt and cursor 
 def draw_terminal(terminal,config):
+    sys.stdout.write("\033[2J")
     sys.stdout.write("\033[?25l")
+    #sys.stdout.write("\r\033[K")
     sys.stdout.write("\033[H")
-
+    sys.stdout.write("\033[3J")
     with terminal.msg_lock:
         msgs = list(terminal.render_buffer)
 
     col_size,_  = shutil.get_terminal_size()
 
     rendered_rows = 0
+    render_text_total =""
     for msg in msgs:
         text = ""
         if msg[0] == "SUCCESS":
             text = f"[{msg[0]}] [{msg[1]}]: {msg[2]}"
-            sys.stdout.write(f"\033[32m{text}\033[0m\n")
+            render_text_total+=f"\033[32m{text}\033[0m\n"
+            #sys.stdout.write(f"\033[32m{text}\033[0m\n")
 
         elif msg[0] =="ERROR":
             text = f"[{msg[0]}] [{msg[1]}]: {msg[2]}"
-            sys.stdout.write(f"\033[31m{text}\033[0m\n")
+            render_text_total+=f"\033[31m{text}\033[0m\n"
+            #sys.stdout.write(f"\033[31m{text}\033[0m\n")
 
         elif msg[0] == "INFO":
             text = f"[{msg[0]}] [{msg[1]}]: {msg[2]}"
-            sys.stdout.write(f"\033[34m{text}\033[0m\n")
+            render_text_total+=f"\033[34m{text}\033[0m\n"
+            #sys.stdout.write(f"\033[34m{text}\033[0m\n")
 
         elif msg[0] == "WARNING":
             text = f"[{msg[0]}] [{msg[1]}]: {msg[2]}"
-            sys.stdout.write(f"\033[33m{text}\033[0m\n")
+            render_text_total+=f"\033[33m{text}\033[0m\n"
+            #sys.stdout.write(f"\033[33m{text}\033[0m\n")
 
         elif msg[0] == "":
             text =f"{msg[2]}"
-            sys.stdout.write(f"{text}\033[0m\n")
+            render_text_total+=f"{text}\033[0m\n"
+            #sys.stdout.write(f"{text}\033[0m\n")
 
         elif msg[0]=="SUCCESS_NO_WRITE":
             text = f"{msg[2]}"
-            sys.stdout.write(f"\033[32m{text}\033[0m\n")
+            render_text_total+=f"\033[32m{text}\033[0m\n"
+            #sys.stdout.write(f"\033[32m{text}\033[0m\n")
         
         visual_rows = 0
         for line in text.split('\n'):
@@ -75,9 +82,13 @@ def draw_terminal(terminal,config):
         input_buffer =terminal.input_buffer
         cursor_pos = terminal.cursor_pos
 
+    render_text_total +=prompt+input_buffer
+   
+
     absolute_cursor_column = len(prompt) + cursor_pos
     cursor_column=absolute_cursor_column % col_size + 1
-    sys.stdout.write(f"{prompt}{input_buffer}")
+    #sys.stdout.write(f"{prompt}{input_buffer}")
+    sys.stdout.write(render_text_total)
     cursor_row = rendered_rows+ absolute_cursor_column//col_size + 1
    
     sys.stdout.write("\033[J")
@@ -100,7 +111,7 @@ def shell(config, appstate , terminal):
     input_handler  = threading.Thread(target = updateInputBuffer, args=(terminal,config),daemon=True)
 
     input_handler.start()
-    terminal.msg_queue.put(("INFO","Admin-REPL","Use command: 'help' or 'h' for user guide."))
+    terminal.msg_queue.put(("INFO","Admin-REPL","Use command: 'help' or 'h' or 'info' for user guide."))
     while not terminal.shutdown_achieved:
         
         inputLine = None
@@ -109,29 +120,12 @@ def shell(config, appstate , terminal):
                 inputLine = terminal.inputLine
         
         if inputLine:
-            try:
-                exec_result = shell_execute(parser(tokenize(inputLine)),config,appstate,terminal)
-                if exec_result != "@{clear}":
-                    terminal.msg_queue.put(("SUCCESS_NO_WRITE","",exec_result))
-                    
-            except Exception as err:
-                terminal.msg_queue.put(("ERROR","INTERPRETER",str(err)))
+            interpreter_handler = threading.Thread(target=interpreterHandler, args= (config,appstate,terminal,inputLine), daemon=True)
+            interpreter_handler.start()
 
-            finally:
-                with terminal.input_lock:
-                        terminal.inputLine = ""
-                
         append_msg_to_render_buffer(terminal)
 
         if terminal.needs_redraw:
             draw_terminal(terminal,config)
 
         time.sleep(0.01)
-
-
-config = Config()
-appstate = AppState()
-terminal= TerminalState()
-appstate.msg_queue = terminal.msg_queue
-configure_crawler(config,".env")
-shell(config,appstate,terminal)
