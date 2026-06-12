@@ -1,5 +1,5 @@
 import redis
-from crawler_exceptions.CrawlerDBErr import RedisPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import RedisPoolErr
 
 def pushLinkstoQueue(page,workerstate):
     redis_client = workerstate.redis_client

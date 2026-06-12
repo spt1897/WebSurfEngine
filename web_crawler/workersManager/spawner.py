@@ -1,6 +1,6 @@
 import threading
-from pipeline.pipelineManager import pipelineManager
-from states.workerstate import WorkerState
+from web_crawler.pipeline.pipelineManager import pipelineManager
+from web_crawler.states.workerstate import WorkerState
 
 #spawns the worker threads ony by one and assigns their workerstate and id 
 def spawn_workers(config, appstate):
@@ -14,4 +14,4 @@ def spawn_workers(config, appstate):
         appstate.worker_states.append(workerstate)
         appstate.crawler_workers.append(worker)
         worker.start()
-        appstate.msg_queue.put(("[INFO]","[Spawner]",f"Crawler_Worker #id:{i} spawned."))
+        appstate.msg_queue.put(("INFO","Spawner",f"Crawler_Worker #id:{i} spawned."))

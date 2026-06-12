@@ -1,6 +1,6 @@
 import time
 import redis
-from crawler_exceptions.CrawlerDBErr import RedisPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import RedisPoolErr
 
 def isEligibleToCrawl(config,page,workerstate):
     try:

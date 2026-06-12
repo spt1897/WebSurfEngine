@@ -1,8 +1,8 @@
-from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
-from addUpdateWebPages import addUpdateWebPages
-from addUpdateImages import addUpdateImages
-from indexPages import indexPages
-from indexImages import indexImages
+from web_crawler.crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from web_crawler.pipeline.pageIndexer.addUpdateWebPages import addUpdateWebPages
+from web_crawler.pipeline.pageIndexer.addUpdateImages import addUpdateImages
+from web_crawler.pipeline.pageIndexer.indexPages import indexPages
+from web_crawler.pipeline.pageIndexer.indexImages import indexImages
 
 def indexWebPages(pages_batch,workerstate):
     try:

@@ -23,6 +23,7 @@ class Config:
         self.USER_AGENT :str|None  = None
         self.RECRAWL_TIMER_SEC:int= None
         self.keep_cralwing : bool = None   #keep crawling when sql down??
+        self.dump_path:str |None =None #where to dump data for periodic snapshot for data safety
         #=============================================================
         #Redis:=======================================================
         self.REDIS_HOST : str | None=None

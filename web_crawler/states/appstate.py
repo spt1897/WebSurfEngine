@@ -1,5 +1,5 @@
 import threading
-from nltk.stem import PorterStemmer
+from nltk.stem import SnowballStemmer
 from queue import Queue
 import time
 
@@ -27,11 +27,12 @@ class AppState:
         self.mysql_sync_lock=threading.Lock()
         #=========================================================
         #other shared objects/tools for parsing,indexing etc.
-        self.stemmer = PorterStemmer()
+        self.stemmer = SnowballStemmer("english")
         #=========================================================
         #globally shared parsed pages object queue which the synchronizer uses to batch writing/indexing to DB
         self.pages_queue = Queue()
         self.pages_batch=[]
+        self.pages_lock = threading.Lock()
         #=========================================================
         #urls not completely parsed due to infrastructure failure
         self.failed_urls=Queue()
@@ -43,6 +44,8 @@ class AppState:
         self.mysql_server_down= False 
         #redis down
         self.redis_server_down = False
+        #loaded dumped data
+        self.loadedDumped =False
         #=========================================================
         #reference to msg_queue for workers to log errors/progress:
         self.msg_queue = None

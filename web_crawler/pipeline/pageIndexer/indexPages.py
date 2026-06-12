@@ -1,4 +1,4 @@
-from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import MysqlPoolErr
 
 def indexPages(pages_batch,workerstate):
     mysql_cursor =  workerstate.mysql_cursor
@@ -14,7 +14,7 @@ def indexPages(pages_batch,workerstate):
         keywords_rows = [(words,page.id,tf) for page in pages_batch for words,tf in page.stemmedWords_TF.items()]
         
         if keywords_rows:
-            mysql_cursor.executemany("""INSERT INTO keywords(keyword,page_id,tf)
+            mysql_cursor.executemany("""INSERT IGNORE INTO keywords(keyword,page_id,tf)
                                  VALUES (%s,%s,%s)""",keywords_rows)
         
         

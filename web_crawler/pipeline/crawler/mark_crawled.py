@@ -1,6 +1,6 @@
 import redis
 import time
-from crawler_exceptions.CrawlerDBErr import RedisPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import RedisPoolErr
 
 
 def mark_crawled(page,appstate,workerstate):
@@ -22,7 +22,8 @@ def mark_crawled(page,appstate,workerstate):
         pipeline.rpush("successful_crawl",page.url)
 
         #push page object to parsed pages queue
-        appstate.pages_queue.put(page)
+        with appstate.pages_lock:
+            appstate.pages_queue.put(page)
         pipeline.execute()
         appstate.pages_crawled +=1
         workerstate.pages_crawled += 1

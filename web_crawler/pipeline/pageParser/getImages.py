@@ -1,17 +1,20 @@
-from states.image import Image
+from web_crawler.states.image import Image
 from urllib.parse import urljoin
-from tokenizer import tokenize_by_freq
+from web_crawler.pipeline.pageParser.tokenizer import tokenize_by_freq
 
-def getImages(config,soup,url):
+def getImages(config,appstate,soup,url):
     img_tags = soup.find_all("img")
     stopwords = config.stopwords
-    stemmer = config.stemmer
+    stemmer = appstate.stemmer
 
     seen_images ={}
     seen_descp =set()
     for img_tag in img_tags:
         src= img_tag.get("src")
         if not src:
+            continue
+
+        if src.startswith("data:"):
             continue
 
         image_url = urljoin(url,src)

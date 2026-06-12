@@ -27,3 +27,4 @@ def configure_crawler(config,path_env):
     config.USER_AGENT=os.getenv("USER_AGENT","WebSurfBot").strip()
     config.RECRAWL_TIMER_SEC=int(os.getenv("RECRAWL_TIMER_SEC","10").strip())
     config.keep_crawling=bool(os.getenv("keep_crawling","False").strip())
+    config.dump_path = str(os.getenv("dump_path","./crawler_dump/snapshot.dump").strip())

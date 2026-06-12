@@ -8,7 +8,7 @@ def getLinks(config,url,soup, workerstate):
             break
 
         link =urljoin(url,a["href"])
-        if(not workerstate.redis_client.sismember("visited_urls",link) 
+        if(not workerstate.redis_client.hget("visited_urls",link) 
                 and not link in seenPageLinks
                 and (link.startswith("https://") or link.startswith("http://"))):
             links.append(link)

@@ -214,7 +214,7 @@ def shell_execute(command, config, appstate,terminal):
                 exec_result = "Cannot use command: 'emergency-reconnect-db' during normal operation.\nIt is available only when DB server is down and keep_crawling: True"
 
         case Command.SHUTDOWN:
-            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nCompleting all incomplete parses...\nSyncing unsynced data to Database...\n"))
+            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nCompleting all incomplete parses...\nFixing DB connections if any...\nSyncing unsynced data to Database...\n"))
             shutdown(appstate)
             appstate.msg_queue.put(("SUCCESS","Crawler","Successfully completed all processes and synced to Database. Exiting REPL..."))
             time.sleep(1)
@@ -226,7 +226,7 @@ def shell_execute(command, config, appstate,terminal):
 
 
         case Command.RESTART:
-            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nCompleting all incomplete parses...\nSyncing unsynced data to Database...\n"))
+            appstate.msg_queue.put(("INFO","Crawler","Preparing for Shutdown...\nNot taking any new pages.\nFixing DB connections if any...\nCompleting all incomplete parses...\nSyncing unsynced data to Database...\n"))
             shutdown(appstate)
             appstate.msg_queue.put(("SUCCESS","Crawler","Successfully completed all processes and synced to Database."))
             terminal.shutdown_achieved = True

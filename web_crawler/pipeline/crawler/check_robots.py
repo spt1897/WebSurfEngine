@@ -1,7 +1,7 @@
 import urllib.robotparser
 import redis
-from request_page import request_page
-from crawler_exceptions.CrawlerDBErr import RedisPoolErr
+from web_crawler.pipeline.crawler.request_page import request_page
+from web_crawler.crawler_exceptions.CrawlerDBErr import RedisPoolErr
 
 #this functions checks if robots.txt of the domain allows the particular page to be crawled
 #if robots.txt doesn't exist we consider crawling is allowed

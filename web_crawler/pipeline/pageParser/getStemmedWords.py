@@ -1,4 +1,4 @@
-from tokenizer import tokenize_by_freq
+from web_crawler.pipeline.pageParser.tokenizer import tokenize_by_freq
 
 
 def getStemmedWords_TF(config,appstate,soup):

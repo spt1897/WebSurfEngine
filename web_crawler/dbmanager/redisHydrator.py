@@ -1,6 +1,7 @@
 import redis
 import mysql.connector
-import crawler_exceptions.CrawlerDBErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import RedisPoolErr
 import sys
 #this fucntion checks whether 
 # there is any current crawl queue or crawl domain in the redis cache
@@ -17,86 +18,87 @@ def hydrate_redis(config, appstate, workerstate):
     with appstate.redis_hydrator_lock:
         try:
 
-            if(redis_client.llen("crawl_queue")>0 
-             and redis_client.hlen("domains") >0):
-                appstate.msg_queue.put(("INFO","Hydrator","A crawling session is already active. Continuing the same."))
-                return
-            
-            pipeline = redis_client.pipeline()
-            #pushing the crawl queue in batches to redis cache
-            mysql_cursor.execute("""
-                SELECT id, url
-                FROM crawl_queue
-                WHERE status = 'not_crawled'
-                ORDER BY id
-                LIMIT %s;
-            """, (config.IMPORT_BATCH_SIZE,))
-
-            crawl_queue = mysql_cursor.fetchall()
-
-            if not crawl_queue:
-                appstate.msg_queue.put(("INFO","Hydrator","No url to crawl in crawl queue in SQL server. Closing crawler."))
-                appstate.crawler_shutdown.set()
-            
-            ids = [row[0] for row in crawl_queue]
-            urls = [row[1] for row in crawl_queue]
-
-            format_ids = ",".join(["%s"] * len(ids))
-
-            mysql_cursor.execute(f"""
-                UPDATE crawl_queue
-                SET status = 'in_process',
-                 in_process_started=NOW()
-                WHERE id IN ({format_ids});
-            """, ids)
-
-            mysql_client.commit()
-
-            for url in urls:
-                pipeline.rpush("crawl_queue", url)
-
-            pipeline.execute()
-
-            #pushing the domain hashmap to redis cache
-            mysql_cursor.execute("""
-                SELECT domain, num_pages
-                FROM domains;
-            """)
-
-            domains=mysql_cursor.fetchall()
-
-            for domain , num_pages in domains:
-                pipeline.hset("domains", domain, int(num_pages))
-
-            pipeline.execute()
-
-            #pushing the visited pages url from mysql to seen set in redis cache
-
-            mysql_cursor.execute("""
-                SELECT url,last_crawled
-                FROM WebPages
-                ORDER BY id;
-            """)
-
-            while True:
-                visited_urls = mysql_cursor.fetchmany(10000)
-
-                if not visited_urls:
-                    break
-
-                for (url,last_crawled) in visited_urls:
-                    pipeline.hset("visited_urls",url,int(last_crawled.timestamp()))
+            if not (workerstate.redis_client.llen("crawl_queue")>0 
+                   and workerstate.redis_client.hlen("domains") >0) and not (appstate.mysql_server_down and config.keep_crawling):
                 
+                pipeline = redis_client.pipeline()
+                #pushing the crawl queue in batches to redis cache
+                mysql_cursor.execute("""
+                    SELECT id, url
+                    FROM crawl_queue
+                    WHERE status = 'not_crawled'
+                    ORDER BY id
+                    LIMIT %s;
+                """, (config.IMPORT_BATCH_SIZE,))
+
+                crawl_queue = mysql_cursor.fetchall()
+
+                if not crawl_queue:
+                    appstate.msg_queue.put(("INFO","Hydrator","No url to crawl in crawl queue in SQL server. Closing crawler."))
+                    appstate.crawler_shutdown.set()
+                    return
+                
+                ids = [row[0] for row in crawl_queue]
+                urls = [row[1] for row in crawl_queue]
+
+                format_ids = ",".join(["%s"] * len(ids))
+
+                mysql_cursor.execute(f"""
+                    UPDATE crawl_queue
+                    SET status = 'in_process',
+                    in_process_started=NOW()
+                    WHERE id IN ({format_ids})
+                """, ids)
+
+                mysql_client.commit()
+
+                for url in urls:
+                    pipeline.rpush("crawl_queue", url)
+
                 pipeline.execute()
+
+                #pushing the domain hashmap to redis cache
+                mysql_cursor.execute("""
+                    SELECT domain, num_pages
+                    FROM domains;
+                """)
+
+                domains=mysql_cursor.fetchall()
+
+                for (domain , num_pages) in domains:
+                    pipeline.hset("domains", domain, int(num_pages))
+
+                pipeline.execute()
+
+                #pushing the visited pages url from mysql to seen set in redis cache
+
+                mysql_cursor.execute("""
+                    SELECT url,last_crawled
+                    FROM WebPages
+                    ORDER BY id;
+                """)
+
+                while True:
+                    visited_urls = mysql_cursor.fetchmany(10000)
+
+                    if not visited_urls:
+                        break
+
+                    for (url,last_crawled) in visited_urls:
+                        pipeline.hset("visited_urls",url,int(last_crawled.timestamp()))
+                    
+                    pipeline.execute()
+                
+                appstate.msg_queue.put(("SUCCESS","Crawler","Successfully hydrated Redis from Database"))
 
         
         except mysql.connector.Error as mysqlerr:
             mysql_client.rollback()
-            raise crawler_exceptions.CrawlerDBErr.MysqlPoolErr(f"Error during redis hydration : {mysqlerr}") from mysqlerr
+            raise MysqlPoolErr(f"Error during redis hydration : {mysqlerr}") from mysqlerr
         
         except redis.RedisError as rediserr:
             mysql_client.rollback()
-            raise crawler_exceptions.CrawlerDBErr.RedisPoolErr(f"Error during redis hydration : {rediserr}") from rediserr
+            raise RedisPoolErr(f"Error during redis hydration : {rediserr}") from rediserr
 
         except Exception as err:
             appstate.msg_queue.put(("INFO","Hydrator",f"Error while hydrating redis: {err}"))

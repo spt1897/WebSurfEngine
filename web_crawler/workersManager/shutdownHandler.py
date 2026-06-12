@@ -13,6 +13,8 @@ def shutdown(appstate):
 
     for worker in appstate.crawler_workers:
         worker.join()   #wait for all workers to stop one by one
+
+    appstate.redis_pool.disconnect()
     
    
 

@@ -1,4 +1,4 @@
-from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import MysqlPoolErr
 
 def addUpdateImages(pages_batch,workerstate):
     mysql_cursor =  workerstate.mysql_cursor
@@ -15,7 +15,7 @@ def addUpdateImages(pages_batch,workerstate):
         image_rows = [(page.id,image.image_url, image.description) for page in pages_batch for image in page.images]
 
         if image_rows:
-            mysql_cursor.executemany("""INSERT INTO Images(page_id,image_url,description) 
+            mysql_cursor.executemany("""INSERT IGNORE INTO Images(page_id,image_url,description) 
                              VALUES (%s,%s,%s)""",image_rows)
 
             #get back the ids later useful for indexing

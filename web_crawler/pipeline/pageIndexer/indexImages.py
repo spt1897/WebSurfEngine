@@ -1,4 +1,4 @@
-from crawler_exceptions.CrawlerDBErr import MysqlPoolErr
+from web_crawler.crawler_exceptions.CrawlerDBErr import MysqlPoolErr
 
 def indexImages(pages_batch,workerstate):
     mysql_cursor  = workerstate.mysql_cursor
@@ -9,7 +9,7 @@ def indexImages(pages_batch,workerstate):
         if not imageIndex_rows:
             return
 
-        mysql_cursor.executemany("""INSERT INTO image_index(image_id,keyword,tf)
+        mysql_cursor.executemany("""INSERT IGNORE INTO image_index(image_id,keyword,tf)
                                  VALUES (%s,%s,%s)""",imageIndex_rows)
 
 

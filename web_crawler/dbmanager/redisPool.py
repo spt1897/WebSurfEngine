@@ -5,10 +5,14 @@ import sys
 #Redis Connection pool:
 def connect_to_Redis_pool(config, appstate):
     with appstate.redis_connect_lock:
-        if appstate.redis_pool is not None:
+        if appstate.redis_server_down or appstate.redis_pool is not None :
             return 
         tries =0 
         while not appstate.redis_pool:
+            if appstate.crawler_pause.is_set():
+                    time.sleep(config.CRAWL_DELAY)
+                    continue
+
             try:
                 tries+=1
                 appstate.redis_pool=redis.ConnectionPool(
